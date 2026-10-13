@@ -1,0 +1,14 @@
+{
+  "id": "quedaco-monstros",
+  "title": "QUEDAÇO Monstros",
+  "description": "Auditoria e conversão assistida de monstros D&D 5e para Skyfall RPG.",
+  "version": "0.1.0",
+  "authors": [{"name": "Yuri"}],
+  "url": "https://github.com/yurisatelite/quedaco-monstros",
+  "manifest": "https://github.com/yurisatelite/quedaco-monstros/releases/download/v0.1.0/module.json",
+  "download": "https://github.com/yurisatelite/quedaco-monstros/releases/download/v0.1.0/quedaco-monstros.zip",
+  "compatibility": {"minimum": "13", "verified": "13", "maximum": "13"},
+  "relationships": {"systems": [{"id": "skyfall", "type": "system", "compatibility": {"minimum": "1.0.1"}}]},
+  "esmodules": ["src/main.mjs"],
+  "styles": ["styles/monsters.css"]
+}

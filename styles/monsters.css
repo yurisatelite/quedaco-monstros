@@ -1,0 +1,6 @@
+.qm { display: grid; gap: 12px; padding: 8px; }
+.qm label { display: grid; gap: 8px; }
+.qm summary label { display: flex; align-items: center; }
+.qm details { border: 1px solid var(--color-border-light-2, #777); padding: 8px; border-radius: 4px; }
+.qm pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; font-size: 12px; }
+.qm p, .qm ul { margin: 0; }
