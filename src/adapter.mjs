@@ -1,9 +1,11 @@
 import {ID,audit,key,snapshot} from './conversion.mjs';
+import {classify} from './sources.mjs';
 
 export function assertAccess(game,actor){
   if(game.system?.id!=='skyfall')throw Error('Este módulo requer Skyfall.');
   if(!game.user?.isGM||!actor?.isOwner)throw Error('Apenas a Mestra com permissão de edição pode corrigir.');
   if(actor.type!=='npc'||actor.hasPlayerOwner)throw Error('Selecione uma ameaça NPC sem dono jogador.');
+  if(classify(actor)==='official')throw Error('Ficha oficial protegida: selecione um monstro importado.');
 }
 
 export async function preview(game,actor,raw,resolve=globalThis.fromUuid){

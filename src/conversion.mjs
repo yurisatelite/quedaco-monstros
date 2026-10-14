@@ -29,6 +29,12 @@ export function sourceSections(actor,raw){
     return {entries:sections.flatMap(([section,value])=>blocks(value).map(e=>({...e,section}))),warnings:sections.filter(([,v])=>v&&blocks(v).length===0).map(([s])=>`Seção ${s} não reconhecida; revise a fonte.`),origin:'json'};
   }
   const text=originalTextFromBiography(actor?.system?.biography??'');
+  const headingMap={traits:'traits','special abilities':'traits','traços':'traits',actions:'action','ações':'action','bonus actions':'bonus','ações bônus':'bonus',reactions:'reaction','reações':'reaction','legendary actions':'legendary','ações lendárias':'legendary'};
+  const headings=[...text.matchAll(/<(?:h[1-6]|p|strong|b)[^>]*>\s*(?:<[^>]+>\s*)*(Traits|Special Abilities|Traços|Actions|Ações|Bonus Actions|Ações Bônus|Reactions|Reações|Legendary Actions|Ações Lendárias)\s*:?\s*(?:<\/[^>]+>\s*)+/gi)];
+  if(headings.length){
+    const entries=headings.flatMap((h,i)=>blocks(text.slice(h.index+h[0].length,headings[i+1]?.index??text.length)).map(e=>({...e,section:headingMap[h[1].toLowerCase()]})));
+    if(entries.length)return {entries,origin:'biography-sections',warnings:[]};
+  }
   return {entries:blocks(text).map(e=>({...e,section:'unknown'})),origin:'biography',warnings:[text?'A biografia antiga perdeu a separação de ações/traços/lendárias. Carregue o JSON original para converter.':'Original não encontrado. Carregue o JSON original.']};
 }
 
@@ -40,7 +46,7 @@ function makeRolls(item,attribute,protection,components){
   item.system.attack.damage=components.map(c=>c.formula).join(' + ');
 }
 
-export function convertEntry(entry,{boss=false,legendary=false}={}){
+export function convertEntry(entry,{boss=false,legendary=false,brute=false}={}){
   const notes=[],{text,section}=entry;
   let name=entry.name;
   let activation=section==='traits'?'passive':section==='reaction'?'reaction':section==='bonus'?'bonus':'action';
@@ -92,18 +98,26 @@ export function convertEntry(entry,{boss=false,legendary=false}={}){
   }
   const range=text.match(/(?:reach|range)\s+(\d+)(?:\/\d+)?\s*ft/i);
   if(range){item.system.range.value=feetToMeters(range[1]);item.system.range.units='m';}
-  if(weapon||save&&components.length){
+  const within=text.match(/within\s+(\d+)\s+(?:feet|ft)/i);
+  if(!range&&within){item.system.range.value=feetToMeters(within[1]);item.system.range.units='m';}
+  if(brute&&components.length&&(weapon||save)){
+    components[0].formula=components[0].formula.replace(/^(\d+)d/,(_,n)=>`${Number(n)+1}d`);
+    notes.push('Bruto: um dado extra no dano principal, calculado a partir da fonte original.');
+  }
+  if(weapon||save){
     const attribute=weapon?.[2]==='Spell'?'int':weapon?.[1]==='Ranged'?'dex':'str';
-    const protection=save?abilities[save[1]]:'dex';
+    const protection=weapon?'dex':abilities[save[1]];
     if(save&&!weapon)notes.push('Teste de resistência D&D convertido em ataque contra a proteção correspondente. Revise o atributo ofensivo sugerido (FOR).');
     if(weapon?.[2]==='Spell')notes.push('Ataque mágico: INT sugerida; confira o atributo de conjuração.');
     if(/Melee or Ranged/.test(weapon?.[1]??''))notes.push('Ataque misto: FOR sugerida; revise alcance e modalidade.');
     makeRolls(item,attribute,protection,components);
     item.system.target.type='creature';item.system.target.quantity=shape?null:1;
+    const multiple=text.match(/(?:creates?|targets?|choose|chooses)\s+(one|two|three|four|five|\d+)\s+(?:bolts?|creatures?|targets?)/i);
+    if(multiple&&!shape)item.system.target.quantity=({one:1,two:2,three:3,four:4,five:5}[multiple[1]]??Number(multiple[1]));
     item.system.descriptors=['attack',...(weapon?.[2]==='Spell'?['magic']:[]),...new Set(components.map(c=>c.type))];
     item.system.attack.hit=components.map(c=>`<p>${escape(c.formula)} de dano ${c.type}.</p>`).join('');
     if(/half as much|half the damage/i.test(text))item.system.attack.miss='<p>Metade do dano; confira os efeitos no texto original.</p>';
-    if(!components.length)notes.push('Dano não reconhecido; revisão obrigatória.');
+    if(!components.length)notes.push('Efeito sem dano reconhecido: confira as condições descritas.');
     if(/plus|saving throw|condition|poisoned|grappled|restrained|diseas|frightened/i.test(text))notes.push('Efeitos adicionais preservados em texto; aplicação manual.');
   }else if(components.length){
     item.system.effect.damage=components.map(c=>c.formula).join(' + ');
@@ -115,26 +129,40 @@ export function convertEntry(entry,{boss=false,legendary=false}={}){
   item.system.special.descriptive=`<p>${escape(notes.join(' '))}</p>`;
   // Keep source prose as reference, with the converted mechanics first.
   item.system.description.value=`${item.system.attack.hit}${item.system.attack.miss}<p>${safeText}</p>${item.system.special.descriptive}`;
-  return {item,notes,blocked:section==='unknown'||/legendary resistance|spellcasting/i.test(name)||section==='legendary'&&cost>3};
+  const reviewRequired=/for every \d+ feet|per \d+ feet|at the start|ends its turn|end of.*turn.*damage/i.test(text);
+  if(reviewRequired)notes.push('Dano condicionado à distância ou ao turno: revise antes de aplicar; fora da seleção automática do lote.');
+  return {item,notes,reviewRequired,blocked:section==='unknown'||/legendary resistance|spellcasting/i.test(name)||section==='legendary'&&cost>3};
 }
 
 export function audit(actor,raw){
   const source=sourceSections(actor,raw),legendary=source.entries.some(e=>e.section==='legendary');
   const boss=actor?.system?.hierarchy==='boss'||Array.from(actor?.items??[]).some(i=>i.type==='hierarchy'&&i.system?.identifier==='boss')||legendary;
   const current=Array.from(actor?.items??[]);
-  const candidates=source.entries.map(entry=>{
-    const result=convertEntry(entry,{boss,legendary});
+  const brute=Array.from(actor?.system?.archetype??[]).includes('brute')||current.some(i=>i.type==='archetype'&&i.system.identifier==='brute');
+  const references=new Map();
+  const entries=source.entries.filter(entry=>{
+    if(entry.section!=='legendary'||/Costs?\s+(?:[3-9]|\d{2,})\s+Actions/i.test(`${entry.name} ${entry.text}`))return true;
+    const original=source.entries.find(e=>e.section==='action'&&matchKey(e.name)===matchKey(entry.name));
+    if(!original)return true;
+    const words=key(entry.text),name=key(original.name);
+    if(!words.includes(`uses${name}`)&&!words.includes(`usesits${name}`)&&!words.includes(`makesone${name}attack`))return true;
+    references.set(original,[...(references.get(original)??[]),entry]);return false;
+  });
+  const candidates=entries.map(entry=>{
+    const result=convertEntry(entry,{boss,legendary,brute});
+    if(references.has(entry))result.notes.push('A ação lendária apenas chama esta habilidade: convertida em ação normal, sem duplicar o Item.');
     const found=current.filter(i=>i.type==='ability'&&matchKey(i.name)===matchKey(result.item.name));
-    result.item.flags={[ID]:{sourceKey:`${entry.section}:${key(entry.name)}`,version:1}};
+    result.item.flags={[ID]:{sourceKey:`${entry.section}:${key(entry.name)}`,version:2}};
     const fields=['activation.type','activation.recharge','attack.ability','attack.protection','attack.damage','target.shape','target.length'];
     const read=(object,path)=>path.split('.').reduce((v,p)=>v?.[p],object)??null;
     const differences=found.length===1?fields.filter(path=>read(found[0].system,path)!==read(result.item.system,path)):[];
+    if(found.length===1&&plain(found[0].system?.effect?.descriptive??'')!==plain(result.item.system.effect.descriptive))differences.push('effect.descriptive');
     return {...result,differences,source:entry,status:found.length>1?'ambiguous':found.length?'existing':result.blocked?'review':'missing',existingId:found[0]?.id??found[0]?._id};
   });
   const names=new Map();
   candidates.forEach(c=>{const k=matchKey(c.item.name);names.set(k,(names.get(k)??0)+1);});
   candidates.forEach(c=>{if(names.get(matchKey(c.item.name))>1){c.status='ambiguous';c.blocked=true;c.notes.push('Mesmo nome em mais de uma seção; escolha manual necessária.');}});
-  return {actorId:actor.id??actor._id,name:actor.name,boss,legendary,origin:source.origin,nd:actor.system?.level?.value??(raw?crToNd(raw.Challenge??raw.challenge_rating):null),warnings:[...source.warnings,'Prévia de adaptação: equilíbrio e equivalência de efeitos exigem teste na mesa.'],candidates};
+  return {actorId:actor.id??actor._id,name:actor.name,boss,brute,legendary,origin:source.origin,nd:actor.system?.level?.value??(raw?crToNd(raw.Challenge??raw.challenge_rating):null),warnings:[...source.warnings,'Efeitos descritos exigem aplicação manual e teste na mesa.'],candidates};
 }
 
 export function snapshot(actor){return JSON.stringify({system:actor.toObject?.().system??actor.system,items:Array.from(actor.items??[]).map(i=>i.toObject?.()??i)});}

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {blocks,convertEntry,audit} from '../src/conversion.mjs';
 import {preview,apply,undo} from '../src/adapter.mjs';
+import {classify,batchEligible,ensureSources,loadPublicSources} from '../src/sources.mjs';
+import {prepareBatch,applyBatch,defaultSelection} from '../src/batch.mjs';
 
 test('gist HTML mantém títulos e efeitos em parágrafos sucessivos',()=>{
   const result=blocks('<p><em><strong>Bite.</strong></em> Melee Weapon Attack: +4 to hit.</p><p><em><strong>Enslave (3/Day).</strong></em> Targets one creature.</p><p>The target repeats the save.</p>');
@@ -127,4 +129,69 @@ test('hierarquia e benefícios vêm do compêndio autorizado e preservam efeitos
   const report=await preview(game,actor,{legendary_actions:[{name:'Move',desc:'Moves away.'}]},async()=>({toObject:()=>structuredClone(benefit)}));
   assert.ok(report.candidates.some(c=>c.item.type==='hierarchy'&&c.item.system.identifier==='boss'));
   assert.deepEqual(report.candidates.find(c=>c.item.name==='Chefão'&&c.item.type==='ability').item.effects,benefit.effects);
+});
+
+test('Kraken: referência lendária reutiliza Lightning Storm sem bloquear nem duplicar',()=>{
+  const report=audit({name:'Kraken',system:{archetype:['brute']},items:[]},{actions:[{name:'Lightning Storm',desc:'The kraken creates three bolts of lightning within 120 feet. A target makes a DC 23 Dexterity saving throw, taking 22 (4d10) lightning damage, or half as much damage.'}],legendary_actions:[{name:'Lightning Storm (Costs 2 Actions)',desc:'The kraken uses Lightning Storm.'}]});
+  assert.equal(report.candidates.length,1);
+  const c=report.candidates[0];assert.equal(c.blocked,false);
+  assert.equal(c.item.system.attack.damage,'5d10');
+  assert.equal(c.item.system.range.value,36);
+  assert.equal(c.item.system.target.quantity,3);
+});
+test('Kraken: save de regurgitar não troca a proteção da mordida; digestão permanece descrita',()=>{
+  const {item,reviewRequired}=convertEntry({name:'Bite',section:'action',text:'Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 23 (3d8 + 10) piercing damage. The target is swallowed and takes 42 (12d6) acid damage at the start of each turn. The kraken makes a DC 25 Constitution saving throw to regurgitate.'},{boss:true,brute:true});
+  assert.equal(item.system.attack.protection,'dex');
+  assert.equal(item.system.attack.damage,'4d8+10');
+  assert.match(item.system.effect.descriptive,/12d6/);
+  assert.equal(reviewRequired,true);
+});
+test('Bruto conta seu dado uma vez a partir da fonte original',()=>{
+  const entry={name:'Claw',section:'action',text:'Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 7 (2d6) slashing damage.'};
+  assert.equal(convertEntry(entry,{brute:true}).item.system.attack.damage,'3d6');
+  assert.equal(convertEntry(entry,{brute:true}).item.system.attack.damage,'3d6');
+});
+test('biografia antiga com título alternativo e seções HTML vira fonte estruturada',()=>{
+  const report=audit({name:'X',system:{biography:'<details><summary><strong>Original D&amp;D</strong></summary><h3>Traits</h3><p><strong>Amphibious.</strong> Breathes air.</p><h3>Actions</h3><p><strong>Bite.</strong> Melee Weapon Attack: +4 to hit, reach 5 ft. Hit: 3 (1d6) piercing damage.</p><h3>Legendary Actions</h3><p><strong>Move.</strong> Moves away.</p></details>'},items:[]});
+  assert.equal(report.origin,'biography-sections');
+  assert.equal(report.legendary,true);
+  assert.deepEqual(report.candidates.map(c=>c.item.system.activation.type),['passive','action','action']);
+});
+test('origem oficial prevalece sobre nome igual ao SRD e flag antiga',()=>{
+  const actor={name:'Kraken',type:'npc',isOwner:true,flags:{quedaco:{convertedFrom:'dnd5e'}},_stats:{compendiumSource:'Compendium.skyfall-core.enemies.Actor.kraken'}};
+  assert.equal(classify(actor,[{name:'Kraken'}]),'official');
+  assert.equal(batchEligible(actor,[{name:'Kraken'}]),false);
+  assert.equal(classify({...actor,_stats:{},flags:{}},[{name:'Kraken'}]),'matched');
+  assert.equal(classify({...actor,name:'Lodo Arcano',_stats:{},flags:{}},[{name:'Kraken'}]),'unknown');
+});
+test('fonte carrega do gist uma vez e persiste entre sessões',async()=>{
+  let calls=0,cached=[];
+  const game={user:{isGM:true},settings:{get:()=>cached,set:async(_id,_k,v)=>cached=v}};
+  const fetcher=async()=>{calls++;return {ok:true,json:async()=>({files:{data:{filename:'srd_5e_monsters.json',content:JSON.stringify([{name:'Kraken',actions:[]}])}}})};};
+  assert.equal((await ensureSources(game,null,{fetcher}))[0].name,'Kraken');
+  assert.equal((await ensureSources(game,null,{fetcher}))[0].name,'Kraken');
+  assert.equal(calls,1);
+  await assert.rejects(loadPublicSources(async()=>({ok:false,status:429})),/429/);
+});
+test('lote protege oficiais, ignora ambíguos, preserva backup individual e continua após falha',async()=>{
+  const first=mock(),second=mock();
+  first.actor.name='Clubster';first.actor.flags={quedaco:{convertedFrom:'dnd5e'}};
+  second.actor.id='b';second.actor.name='Clubster';second.actor.flags={quedaco:{convertedFrom:'dnd5e'}};
+  const official={...mock().actor,id:'official',name:'Clubster',_stats:{compendiumSource:'Compendium.skyfall-core.enemies.Actor.o'}};
+  const actors=new Map([['a',first.actor],['b',second.actor],['official',official]]);
+  first.game.actors={get:id=>actors.get(id),[Symbol.iterator]:()=>actors.values()};
+  const sources=[{name:'Clubster',...raw}];
+  const rows=await prepareBatch(first.game,sources);
+  assert.equal(rows.length,2);
+  const selected=Object.fromEntries(rows.map(r=>[r.actorId,defaultSelection(r.report)]));
+  second.actor.system.level.value=8;
+  const results=await applyBatch(first.game,sources,rows,selected);
+  assert.deepEqual(results.map(r=>r.status),['applied','failed']);
+  assert.equal(first.documents.size,1);assert.equal(second.documents.size,0);
+  assert.ok(first.actor.flags['quedaco-monstros'].backup);
+});
+test('atualizações no lote exigem opção explícita e dano condicional fica de fora',()=>{
+  const report={origin:'json',candidates:[{source:{},status:'existing',differences:['attack.damage']},{source:{},status:'missing',reviewRequired:true},{source:{},status:'ambiguous',blocked:true}]};
+  assert.deepEqual(defaultSelection(report),[]);
+  assert.deepEqual(defaultSelection(report,{replace:true}),[0]);
 });

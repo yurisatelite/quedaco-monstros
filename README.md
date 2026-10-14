@@ -1,10 +1,12 @@
-# QUEDAÇO Monstros
+# QUEDAÇO - Monstros
 
-Módulo independente para Foundry VTT 13 e Skyfall 1.0.1. Versão **0.1.0 experimental**, destinada a testar auditoria e correção das habilidades de fichas existentes.
+Módulo independente para Foundry VTT 13 e Skyfall 1.0.1. Versão **0.1.1**, com auditoria e correção de habilidades em lote. A adaptação das regras ainda requer conferência na mesa.
 
-Instale pelo manifesto da versão de teste:
+Manifesto permanente para instalar e atualizar:
 
-https://github.com/yurisatelite/quedaco-monstros/releases/download/v0.1.0/module.json
+https://github.com/yurisatelite/quedaco-monstros/releases/latest/download/module.json
+
+Se você instalou a 0.1.0 pelo endereço fixo daquela versão, use este novo manifesto para vincular as próximas atualizações. O ZIP da 0.1.0 continua preservado.
 
 Ative no mundo Skyfall. A Mestra abre pelo botão de dragão nos controles de tokens, pelo menu da ficha de ameaça ou pela macro:
 
@@ -15,17 +17,19 @@ game.modules.get('quedaco-monstros').api.open()
 ## Teste inicial
 
 1. Faça uma cópia do mundo ou duplique uma ficha para teste. Abra QUEDAÇO Monstros.
-2. Baixe o JSON pela opção Raw do [gist fornecido](https://gist.github.com/tkfu/9819e4ac6d529e225e9fc58b358c3479) e selecione esse arquivo no campo Fonte original. O módulo também lê listas Open5e; não baixa fontes automaticamente.
-3. Escolha a ficha e clique em **Auditar e revisar**, ou em **Conferir todas as fichas** para ver e exportar o relatório do mundo.
-4. Confira os Items propostos. Ausentes reconhecidos ficam marcados; substituições de Items existentes precisam ser marcadas individualmente. Magias, resistência lendária, nomes ambíguos e originais sem seções são pendências de revisão manual.
-5. Clique em **Aplicar selecionadas** e confirme. Abra a ficha, confira as ações e role os ataques. Um backup dos Items alterados fica na flag `quedaco-monstros.backup` do Actor.
+2. Clique em **Revisar monstro** para uma ficha ou em **Auditar todos os importados** para o lote. A fonte do [gist fornecido](https://gist.github.com/tkfu/9819e4ac6d529e225e9fc58b358c3479) é carregada automaticamente e lembrada neste mundo. O campo de arquivo permite usar uma lista Open5e ou outro JSON compatível no lugar dela.
+3. No lote, confira os monstros marcados e os totais **Adicionar / atualizar**. A identificação usa a origem de importação ou uma correspondência única com a fonte; Actors de origem oficial Skyfall, fichas de jogadores e origens não identificadas ficam fora do lote.
+4. Para corrigir ataques antigos que já existem, marque **Atualizar também habilidades existentes com diferenças**. Sem essa opção, o lote adiciona somente Items ausentes reconhecidos. Magias, resistência lendária, nomes ambíguos, originais sem seções e danos condicionais ficam para revisão individual pelo botão **Revisar uma ficha**.
+5. Clique em **Corrigir monstros selecionados** no lote, ou em **Aplicar selecionadas** na prévia individual, e confirme. Abra as fichas, confira as ações e role os ataques. Cada ficha recebe um backup próprio na flag `quedaco-monstros.backup`. O resultado do lote informa sucessos e falhas e pode ser exportado.
 6. Para retornar, escolha a mesma ficha e clique em **Desfazer última correção**. Se a ficha foi alterada depois, a restauração automática é bloqueada para preservar essas mudanças; o backup continua disponível para revisão.
 
-O JSON fica apenas na memória da sessão; recarregue a fonte ao recarregar o navegador. O vínculo usa `flags.quedaco.sourceName` ou o nome da ficha. Monstros renomeados sem essa flag precisam da correspondência corrigida. A equivalência de nomes traduzidos é conservadora (Mordida, Garras e Cauda); outras traduções exigem revisão. A biografia antiga perdeu a distinção entre ações, traços e ações lendárias, portanto serve somente à auditoria preliminar.
+O JSON fica no cache local do mundo, sem upload das fichas a serviços externos. O vínculo usa `flags.quedaco.sourceName` ou o nome da ficha. Monstros renomeados sem essa flag precisam da correspondência corrigida. A equivalência de nomes traduzidos é conservadora (Mordida, Garras e Cauda); outras traduções exigem revisão. Biografias antigas com seções explícitas também são lidas. Sem uma fonte que distinga ações de passivas e lendárias, a análise permanece preliminar.
 
 ## Conversões nesta versão
 
 - Ações lendárias com custo 1/2 → uma ação; custo 3 → uma ação com recarga nativa. Custos diferentes exigem revisão.
+- Referências lendárias que apenas chamam uma ação existente são unificadas. Isso evita bloquear ou duplicar Lightning Storm do Kraken.
+- O dado extra do arquétipo Bruto é calculado uma vez a partir do dano principal da fonte original. Saves posteriores do próprio monstro, como regurgitar, não trocam a proteção do ataque de mordida.
 - Chefão sem seção de ações lendárias: reduz em um o máximo de multiataques reconhecido, com mínimo de um. A combinação fica a cargo da Mestra. Ameaças comuns mantêm o limite original.
 - Áreas reconhecidas de chefões: +1 dado; áreas com recarga: +2 dados. Recarga pronta é `1`, gasta é `0`; o sistema Skyfall controla seu uso e recuperação por catarse.
 - Ataques usam atributo + proficiência contra DES; testes de resistência com dano usam a proteção correspondente. FOR/INT ofensivas sugeridas exigem conferência, particularmente em ataques mágicos.
@@ -47,4 +51,14 @@ npm test
 npm run package
 ```
 
-O ZIP e o manifesto são gerados em `dist`. Testes automatizados cobrem as regras, duplicações, invalidação de prévia, permissões, backup e recuperação. O teste visual e de rolagens em um Foundry ativo continua pendente.
+O ZIP e o manifesto são gerados em `dist`. Testes automatizados cobrem regras, lote, duplicações, invalidação de prévia, permissões, backup e recuperação. Um teste de navegador com 340 monstros verifica rolagem nos dois sentidos e botões acessíveis usando a estrutura/CSS do Foundry 13; o teste de rolagens em um Foundry ativo continua pendente. O teste de navegador usa Edge no Windows e é pulado em outros sistemas.
+
+## Integração QUEDAÇO
+
+Contrato `family: "quedaco"`, `contractVersion: 1`, id `quedaco-monstros`. A API é registrada no `ready` e emite `quedaco:register` com um descriptor imutável.
+
+- Capabilities: `monsterAudit`, `monsterConversion`, `batchRepair` (booleanas).
+- Métodos públicos: `open()` e `getStatus()`.
+- `getStatus()` é somente leitura e informa disponibilidade e permissão de gerenciamento; não retorna fichas nem fontes.
+- Integrações opcionais com outros módulos QUEDAÇO: nenhuma nesta versão. O principal pode reconhecer o descriptor e abrir esta interface.
+- Auditoria, prévia, correção individual/em lote, exportação e desfazer funcionam sem o QUEDAÇO principal. Os benefícios nativos usam o compêndio autorizado `skyfall-core.npc-creation`, quando disponível; sua ausência é informada na prévia.

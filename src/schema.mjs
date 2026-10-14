@@ -22,6 +22,10 @@ export function crToNd(input){
   return Math.min(12,Math.ceil(cr/2)+2);
 }
 export function originalTextFromBiography(biography=''){
-  const match=String(biography).match(/<details[^>]*>\s*<summary[^>]*>Original \(D(?:&amp;|&)D 5e\)[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
-  return match?match[1].replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>\s*<p[^>]*>/gi,'\n\n').replace(/<[^>]+>/g,' ').replace(/[ \t]+\n/g,'\n').trim():'';
+  const html=typeof biography==='object'?biography?.value??'':String(biography);
+  const details=[...html.matchAll(/<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi)];
+  const original=details.find(m=>/original|D(?:&amp;|&)D|5e/i.test(m[1]));
+  if(original)return original[2];
+  // Older imports may have no details wrapper at all. Avoid narrative-only biographies.
+  return /(?:Melee|Ranged)\s+(?:Weapon|Spell)\s+Attack|Legendary Actions|Ações Lendárias/i.test(html.replace(/<[^>]+>/g,' '))?html:'';
 }

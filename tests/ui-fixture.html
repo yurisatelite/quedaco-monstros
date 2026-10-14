@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/foundry.css"><link rel="stylesheet" href="/styles/monsters.css"><style>body {padding:20px;background:#292731;color:#eee} .application {position:relative;top:0;left:0;margin:auto} .window-header {flex:0 0 36px;padding:8px} .window-content {flex:1} </style></head><body class="theme-dark"><script type="module">
+const listeners={};
+globalThis.Hooks={once:(event,callback)=>listeners[event]=callback,on:()=>{},callAll:()=>{}};
+const notifications=[];
+globalThis.ui={notifications:Object.fromEntries(['info','warn','error'].map(k=>[k,v=>notifications.push(v)]))};
+globalThis.notifications=notifications;
+const source=Array.from({length:340},(_,i)=>({name:`Monster ${String(i).padStart(3,'0')}`,actions:[{name:'Club',desc:'Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) bludgeoning damage.'}]}));
+const actors=source.map((s,i)=>({id:`a${i}`,name:s.name,type:'npc',isOwner:true,hasPlayerOwner:false,system:{level:{value:3},hierarchy:'complex',archetype:[]},items:[],flags:{quedaco:{convertedFrom:'dnd5e',sourceName:s.name}}}));
+actors.get=id=>actors.find(a=>a.id===id);
+let cache=source;
+const module={title:'QUEDAÇO - Monstros',version:'0.1.1'};
+globalThis.game={user:{isGM:true},system:{id:'skyfall'},actors,packs:{get:()=>null},settings:{get:()=>cache,set:async(_id,_k,v)=>cache=v,register:()=>{}},modules:{get:()=>module}};
+class Dialog {
+  constructor(options){this.options=options;this.listeners=[];}
+  addEventListener(_event,callback){this.listeners.push(callback);}
+  render(){
+    const root=document.createElement('section');root.className=`application ${this.options.classes?.join(' ')??''}`;
+    root.style.width=`${this.options.position?.width??600}px`;root.style.height=`${this.options.position?.height??500}px`;
+    root.innerHTML=`<header class="window-header">${this.options.window.title}</header><div class="window-content"><form class="dialog-form standard-form"><div class="dialog-content standard-form">${this.options.content}</div><footer class="form-footer">${this.options.buttons.map(b=>`<button type="button" data-action="${b.action}">${b.label}</button>`).join('')}</footer></form></div>`;
+    this.element=root;document.body.append(root);
+    for(const b of this.options.buttons)root.querySelector(`[data-action="${b.action}"]`).addEventListener('click',async e=>{await b.callback?.(e,e.target,this);root.remove();});
+    for(const cb of this.listeners)cb();return this;
+  }
+  static confirm(){return true;}
+}
+globalThis.foundry={applications:{api:{DialogV2:Dialog}},utils:{saveDataToFile:()=>{}}};
+const {open}=await import('/src/main.mjs');listeners.init();listeners.ready();open();globalThis.fixtureReady=true;
+</script></body></html>
