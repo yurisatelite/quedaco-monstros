@@ -1,14 +1,14 @@
 {
   "id": "quedaco-monstros",
-  "title": "QUEDAÇO - Monstros",
-  "description": "Auditoria e conversão assistida de monstros D&D 5e para Skyfall RPG.",
-  "version": "0.1.1",
+  "title": "QUEDAÇO - GERADOR",
+  "description": "Gerador de itens V2 com efeitos e ferramentas de auditoria e conversão de monstros para Skyfall RPG.",
+  "version": "0.2.0",
   "authors": [{"name": "Yuri"}],
   "url": "https://github.com/yurisatelite/quedaco-monstros",
   "manifest": "https://github.com/yurisatelite/quedaco-monstros/releases/latest/download/module.json",
-  "download": "https://github.com/yurisatelite/quedaco-monstros/releases/download/v0.1.1/quedaco-monstros.zip",
+  "download": "https://github.com/yurisatelite/quedaco-monstros/releases/download/v0.2.0/quedaco-monstros.zip",
   "compatibility": {"minimum": "13", "verified": "13", "maximum": "13"},
   "relationships": {"systems": [{"id": "skyfall", "type": "system", "compatibility": {"minimum": "1.0.1"}}]},
-  "esmodules": ["src/main.mjs"],
+  "esmodules": ["src/main.mjs", "src/torches.mjs", "src/item-automation.mjs"],
   "styles": ["styles/monsters.css"]
 }

@@ -1,6 +1,6 @@
-# QUEDAÇO - Monstros
+# QUEDAÇO - GERADOR
 
-Módulo independente para Foundry VTT 13 e Skyfall 1.0.1. Versão **0.1.1**, com auditoria e correção de habilidades em lote. A adaptação das regras ainda requer conferência na mesa.
+Módulo independente para Foundry VTT 13 e Skyfall 1.0.1. Versão **0.2.0**, com itens V2, luz de Tocha e auditoria/correção de monstros em lote. A adaptação das regras ainda requer conferência na mesa.
 
 Manifesto permanente para instalar e atualizar:
 
@@ -14,9 +14,17 @@ Ative no mundo Skyfall. A Mestra abre pelo botão de dragão nos controles de to
 game.modules.get('quedaco-monstros').api.open()
 ```
 
+## Itens V2 e iluminação
+
+Abra o módulo pelo dragão e use **Criar itens V2**, ou o botão equivalente na aba Itens. As cópias vão para **QUEDAÇO — Itens V2**, com o sufixo **V2**, preservando os originais. Inclui poções, kit, venenos, rações, armadilha e escudo com sigilo Iluminador. A Tocha no inventário ganha o interruptor de luz; não precisa executar código de console em cada sessão.
+
+São até 23 documentos: os 21 itens selecionados, Tocha V2 e Iluminador V2 de apoio ao escudo. Consulte [uso, regras e limitações dos itens](docs/ITENS-V2-USO-E-VALIDACAO.md). Ataques e venenos têm confirmação da Mestra; a validação no FoundryServer real ainda está pendente. O gerador informa fontes oficiais ausentes sem inventar substitutos. Os compêndios não são redistribuídos.
+
+O ID técnico e o manifesto de atualização continuam `quedaco-monstros`: instalações existentes recebem o novo nome pela atualização normal. O QUEDAÇO principal não é necessário.
+
 ## Teste inicial
 
-1. Faça uma cópia do mundo ou duplique uma ficha para teste. Abra QUEDAÇO Monstros.
+1. Faça uma cópia do mundo ou duplique uma ficha para teste. Abra QUEDAÇO - GERADOR.
 2. Clique em **Revisar monstro** para uma ficha ou em **Auditar todos os importados** para o lote. A fonte do [gist fornecido](https://gist.github.com/tkfu/9819e4ac6d529e225e9fc58b358c3479) é carregada automaticamente e lembrada neste mundo. O campo de arquivo permite usar uma lista Open5e ou outro JSON compatível no lugar dela.
 3. No lote, confira os monstros marcados e os totais **Adicionar / atualizar**. A identificação usa a origem de importação ou uma correspondência única com a fonte; Actors de origem oficial Skyfall, fichas de jogadores e origens não identificadas ficam fora do lote.
 4. Para corrigir ataques antigos que já existem, marque **Atualizar também habilidades existentes com diferenças**. Sem essa opção, o lote adiciona somente Items ausentes reconhecidos. Magias, resistência lendária, nomes ambíguos, originais sem seções e danos condicionais ficam para revisão individual pelo botão **Revisar uma ficha**.
@@ -36,7 +44,7 @@ O JSON fica no cache local do mundo, sem upload das fichas a serviços externos.
 - Alcance, cone/linha/raio reconhecidos, dados de dano e metade do dano no erro entram nos campos nativos. Condições, cura, doenças e demais efeitos permanecem descritos para aplicação manual.
 - Hierarquia, arquétipos e benefícios são copiados do compêndio autorizado `skyfall-core.npc-creation`, quando disponível. Sem o compêndio, a prévia informa a pendência.
 
-A versão não cria novos Actors nem altera PV, ND, RD, atributos, imagens, tokens ou biografia. Não é uma certificação de equilíbrio: a adaptação segue o guia comunitário e precisa de validação no Foundry e na mesa. A criação de monstros novos e a adaptação individual de magias ficam para a próxima etapa.
+As ferramentas de conversão não criam novos Actors nem alteram PV, ND, RD, atributos, imagens, tokens ou biografia. Os itens V2 alteram os recursos e efeitos previstos quando utilizados. Não é uma certificação de equilíbrio: a adaptação segue o guia comunitário e precisa de validação no Foundry e na mesa. A criação de monstros novos e a adaptação individual de magias ficam para a próxima etapa.
 
 ## Fontes e verificação
 
@@ -57,8 +65,8 @@ O ZIP e o manifesto são gerados em `dist`. Testes automatizados cobrem regras, 
 
 Contrato `family: "quedaco"`, `contractVersion: 1`, id `quedaco-monstros`. A API é registrada no `ready` e emite `quedaco:register` com um descriptor imutável.
 
-- Capabilities: `monsterAudit`, `monsterConversion`, `batchRepair` (booleanas).
-- Métodos públicos: `open()` e `getStatus()`.
+- Capabilities: `monsterAudit`, `monsterConversion`, `batchRepair`, `itemEffects`, `torchLights` (booleanas).
+- Métodos públicos: `open()`, `createItemsV2()` (Mestra, criação idempotente) e `getStatus()`.
 - `getStatus()` é somente leitura e informa disponibilidade e permissão de gerenciamento; não retorna fichas nem fontes.
 - Integrações opcionais com outros módulos QUEDAÇO: nenhuma nesta versão. O principal pode reconhecer o descriptor e abrir esta interface.
 - Auditoria, prévia, correção individual/em lote, exportação e desfazer funcionam sem o QUEDAÇO principal. Os benefícios nativos usam o compêndio autorizado `skyfall-core.npc-creation`, quando disponível; sua ausência é informada na prévia.

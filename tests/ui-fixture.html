@@ -8,7 +8,7 @@ const source=Array.from({length:340},(_,i)=>({name:`Monster ${String(i).padStart
 const actors=source.map((s,i)=>({id:`a${i}`,name:s.name,type:'npc',isOwner:true,hasPlayerOwner:false,system:{level:{value:3},hierarchy:'complex',archetype:[]},items:[],flags:{quedaco:{convertedFrom:'dnd5e',sourceName:s.name}}}));
 actors.get=id=>actors.find(a=>a.id===id);
 let cache=source;
-const module={title:'QUEDAÇO - Monstros',version:'0.1.1'};
+const module={title:'QUEDAÇO - GERADOR',version:'0.2.0'};
 globalThis.game={user:{isGM:true},system:{id:'skyfall'},actors,packs:{get:()=>null},settings:{get:()=>cache,set:async(_id,_k,v)=>cache=v,register:()=>{}},modules:{get:()=>module}};
 class Dialog {
   constructor(options){this.options=options;this.listeners=[];}

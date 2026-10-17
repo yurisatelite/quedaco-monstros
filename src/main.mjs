@@ -5,12 +5,13 @@ import {prepareBatch,applyBatch,defaultSelection} from './batch.mjs';
 import {registerIntegration} from './integration.mjs';
 
 let sources=[],loading;
+async function createItemsV2(){const {createItemsV2:create}=await import('./item-automation.mjs');return create();}
 const error=e=>ui.notifications.error(e.message);
 const version=()=>game.modules.get(ID).version;
 const attributes={str:'FOR',dex:'DES',con:'CON',int:'INT',wis:'SAB',cha:'CAR'};
 const activations={action:'Ação',bonus:'Ação bônus',reaction:'Reação',passive:'Passiva'};
 function dialog(title,content,buttons,width=780,bind){
-  const d=new foundry.applications.api.DialogV2({classes:['qm-window'],window:{title:`QUEDAÇO Monstros · ${title}`},position:{width,height:Math.min(760,Math.max(300,window.innerHeight-80))},content:`<div class="qm-scroll"><div class="qm">${content}</div></div>`,buttons});
+  const d=new foundry.applications.api.DialogV2({classes:['qm-window'],window:{title:`QUEDAÇO - GERADOR · ${title}`},position:{width,height:Math.min(760,Math.max(300,window.innerHeight-80))},content:`<div class="qm-scroll"><div class="qm">${content}</div></div>`,buttons});
   if(bind)d.addEventListener('render',()=>bind(d.element));
   d.render({force:true});return d;
 }
@@ -70,15 +71,15 @@ function worldReport(rows){
 function progress(label){let last=0;return (done,total)=>{if(done===total||Date.now()-last>3000){ui.notifications.info(`${label}: ${done}/${total}`);last=Date.now();}};}
 
 export function open(actor){
-  if(!game.user.isGM||game.system.id!=='skyfall')return ui.notifications.warn('QUEDAÇO Monstros requer Skyfall e acesso da Mestra.');
+  if(!game.user.isGM||game.system.id!=='skyfall')return ui.notifications.warn('QUEDAÇO - GERADOR requer Skyfall e acesso da Mestra.');
   const actors=eligible();
-  return dialog(`Versão ${version()}`,`<p>Audite e corrija os monstros importados individualmente ou em lote.</p><label>Monstro<select name="actor">${actors.map(a=>`<option value="${a.id}" ${actor?.id===a.id?'selected':''}>${escape(a.name)} · ND ${escape(a.system.level?.value)}</option>`).join('')}</select></label><p>A fonte D&D será carregada automaticamente do gist e lembrada neste mundo. Para outra fonte, selecione um arquivo abaixo.</p><label>Fonte alternativa (opcional)<input name="source" type="file" accept=".json,application/json"></label>`,[{action:'audit',label:'Revisar monstro',callback:async(_e,_b,d)=>{try{await load(d);const a=game.actors.get(d.element.querySelector('[name="actor"]').value);if(!a)throw Error('Escolha uma ficha.');showReport(a,await preview(game,a,sourceFor(a,sources)));}catch(e){error(e);}}},{action:'world',label:'Auditar todos os importados',callback:async(_e,_b,d)=>{try{await load(d);worldReport(await prepareBatch(game,sources,{onProgress:progress('Auditando')}));}catch(e){error(e);}}},{action:'undo',label:'Desfazer última correção',callback:async(_e,_b,d)=>{const a=game.actors.get(d.element.querySelector('[name="actor"]').value);if(!a)return;if(!await foundry.applications.api.DialogV2.confirm({window:{title:'Restaurar Items'},content:`<p>Desfazer a última correção de ${escape(a.name)}?</p>`}))return;try{await undo(game,a);ui.notifications.info('Última correção desfeita.');}catch(e){error(e);}}},{action:'close',label:'Fechar',default:true}],650);
+  return dialog(`Versão ${version()}`,`<p>Audite e corrija os monstros importados individualmente ou em lote.</p><label>Monstro<select name="actor">${actors.map(a=>`<option value="${a.id}" ${actor?.id===a.id?'selected':''}>${escape(a.name)} · ND ${escape(a.system.level?.value)}</option>`).join('')}</select></label><p>A fonte D&D será carregada automaticamente do gist e lembrada neste mundo. Para outra fonte, selecione um arquivo abaixo.</p><label>Fonte alternativa (opcional)<input name="source" type="file" accept=".json,application/json"></label>`,[{action:'itemsV2',label:'Criar itens V2',callback:()=>createItemsV2().catch(error)},{action:'audit',label:'Revisar monstro',callback:async(_e,_b,d)=>{try{await load(d);const a=game.actors.get(d.element.querySelector('[name="actor"]').value);if(!a)throw Error('Escolha uma ficha.');showReport(a,await preview(game,a,sourceFor(a,sources)));}catch(e){error(e);}}},{action:'world',label:'Auditar todos os importados',callback:async(_e,_b,d)=>{try{await load(d);worldReport(await prepareBatch(game,sources,{onProgress:progress('Auditando')}));}catch(e){error(e);}}},{action:'undo',label:'Desfazer última correção',callback:async(_e,_b,d)=>{const a=game.actors.get(d.element.querySelector('[name="actor"]').value);if(!a)return;if(!await foundry.applications.api.DialogV2.confirm({window:{title:'Restaurar Items'},content:`<p>Desfazer a última correção de ${escape(a.name)}?</p>`}))return;try{await undo(game,a);ui.notifications.info('Última correção desfeita.');}catch(e){error(e);}}},{action:'close',label:'Fechar',default:true}],650);
 }
 Hooks.once('init',()=>game.settings.register(ID,SOURCE_SETTING,{scope:'world',config:false,type:Object,default:[]}));
 Hooks.once('ready',()=>{sources=game.user.isGM?game.settings.get(ID,SOURCE_SETTING)??[]:[];registerIntegration(game,Hooks,open);});
 Hooks.on('getSceneControlButtons',controls=>{
   if(!game.user.isGM||game.system.id!=='skyfall')return;
-  const tool={name:ID,title:'QUEDAÇO Monstros',icon:'fa-solid fa-dragon',button:true,order:98,onClick:()=>open()};
+  const tool={name:ID,title:'QUEDAÇO - GERADOR',icon:'fa-solid fa-dragon',button:true,order:98,onClick:()=>open()};
   if(Array.isArray(controls)){const group=controls.find(c=>c.name==='tokens');group?.tools.push(tool);}else if(controls.tokens?.tools)controls.tokens.tools[ID]=tool;
 });
-Hooks.on('getHeaderControlsActorSheetV2',(sheet,controls)=>{const actor=sheet.actor??sheet.document;if(game.user.isGM&&actor?.type==='npc'&&!actor.hasPlayerOwner)controls.push({action:ID,label:'QUEDAÇO Monstros',icon:'fa-solid fa-dragon',onClick:()=>open(actor)});});
+Hooks.on('getHeaderControlsActorSheetV2',(sheet,controls)=>{const actor=sheet.actor??sheet.document;if(game.user.isGM&&actor?.type==='npc'&&!actor.hasPlayerOwner)controls.push({action:ID,label:'QUEDAÇO - GERADOR',icon:'fa-solid fa-dragon',onClick:()=>open(actor)});});

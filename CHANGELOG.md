@@ -1,3 +1,13 @@
+# 0.2.0 — QUEDAÇO - GERADOR e itens V2
+
+- Nome exibido alterado para QUEDAÇO - GERADOR. ID `quedaco-monstros`, repositório e manifesto permanente preservados para atualizar instalações existentes.
+- Itens V2 e iluminação transferidos do desenvolvimento do QUEDAÇO principal para este módulo independente.
+- Criação idempotente das cópias V2 dos compêndios autorizados, incluindo escudo com sigilo Iluminador, kit, quatro curas, Escalada, Força, Invisibilidade, Resistência, Antitoxina, Velocidade, quatro venenos, Ácido, Fogo Kishi, armadilha e rações. Ver o Invisível é criação da mesa, com alcance/duração configuráveis.
+- Tocha com interruptor no inventário, consumo e expiração por tempo de jogo; luz anterior restaurada ao apagar.
+- Um GM processa os pedidos dos jogadores, com validação de proprietário, estoque e alvo; recibos evitam repetir o mesmo consumo.
+- Ataques, venenos, armadilhas e fim de descanso têm passos assistidos documentados. Mocks e navegador simulam os fluxos; testes com compêndios reais e dois clientes no FoundryServer ainda são necessários.
+- As ferramentas anteriores de auditoria, conversão, lote, backup e desfazer permanecem disponíveis.
+
 # 0.1.1 — correção em lote e integração QUEDAÇO
 
 - Auditoria e correção dos monstros importados selecionados em um único fluxo, com backup por ficha e relatório de resultado. Atualizações de habilidades existentes dependem da opção explícita na tela.
