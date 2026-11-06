@@ -1,0 +1,63 @@
+/* QUEDAÇO — identidade comum v2. Ciano: ações; cobre: destaques; cinza: estrutura.
+   Cópia local em cada módulo para funcionamento independente. Carregar por último.
+   Cores de dados (regiões, biomas), alertas e arte dos documentos são preservadas. */
+.application:is(.qd-ui,.sy-creator,.qt-app,.qe-app,.qd-app,.quedaco-teatro,.opath-calendar,.qm-window,:has(.qnv)),.qt-mini{
+  --qd-bg:#11151c;--qd-panel:#1c232d;--qd-raised:#272f3a;--qd-line:#46505e;
+  --qd-text:#edf1f6;--qd-muted:#b3bdca;--qd-accent:#35cee9;--qd-copper:#cd806f;
+  --qd-copper-soft:#30252a;--qd-selected:#173b4b;--qd-radius:12px;
+  --sy-bg:var(--qd-bg);--sy-panel:var(--qd-panel);--sy-line:var(--qd-line);--sy-text:var(--qd-text);--sy-muted:var(--qd-muted);--sy-cyan:var(--qd-accent);
+  --qe-bg:var(--qd-bg);--qe-panel:var(--qd-panel);--qe-line:var(--qd-line);--qe-text:var(--qd-text);--qe-muted:var(--qd-muted);--qe-accent:var(--qd-accent);
+  --qt-bg:var(--qd-bg);--qt-paper:var(--qd-bg);--qt-card:var(--qd-panel);--qt-panel:var(--qd-panel);--qt-sidebar:var(--qd-panel);
+  --qt-ink:var(--qd-text);--qt-text:var(--qd-text);--qt-muted:var(--qd-muted);--qt-line:var(--qd-line);
+  --qt-green:var(--qd-accent);--qt-green-hover:#89dfed;--qt-gold:var(--qd-copper);--qt-focus:var(--qd-accent);--qt-red:var(--qd-selected);
+  --qd-cyan:var(--qd-accent);--opath-accent:var(--qd-accent);--opath-blue:var(--qd-copper);--opath-line:var(--qd-line);
+  color:var(--qd-text);color-scheme:dark;
+}
+.application:is(.qd-ui,.sy-creator,.qt-app,.qe-app,.qd-app,.quedaco-teatro,.opath-calendar,.qm-window,:has(.qnv))>.window-content{
+  background:var(--qd-bg);color:var(--qd-text);
+}
+.application:is(.qd-ui,.sy-creator,.qt-app,.qe-app,.qd-app,.quedaco-teatro,.opath-calendar,.qm-window,:has(.qnv))>.window-header{
+  background:var(--qd-bg);color:var(--qd-text);border-color:var(--qd-line);
+}
+.application:is(.qd-ui,.sy-creator,.qt-app,.qe-app,.qd-app,.quedaco-teatro,.opath-calendar,.qm-window,:has(.qnv)) :is(.qd-kicker,.qt-kicker,.qt-section-title>i,.qe-brand>i,.sy-step-number,.qd-discovery,.qd-highlight){
+  color:var(--qd-copper);
+}
+.application:is(.qd-ui,.sy-creator,.qt-app,.qe-app,.qd-app,.quedaco-teatro,.opath-calendar,.qm-window,:has(.qnv)) .qd-highlight{
+  background:var(--qd-copper-soft);border-color:var(--qd-copper);
+}
+.application.qt-app :is(.qt-top,.qt-preview,.qt-result,.qt-panel,.qt-library-card),.application.qt-app .qt-top :is(h1,p),.qt-mini{
+  background:var(--qd-panel);color:var(--qd-text);border-color:var(--qd-line);
+}
+.application.qt-app :is(.qt-badge,.qt-warning){
+  background:var(--qd-copper-soft);color:var(--qd-text);border-color:var(--qd-copper);
+}
+.application.qt-app :is(.qt-result-meta,.qt-result-bottom small,.qt-empty,.qt-result-meta button),.qt-mini summary{
+  color:var(--qd-muted);
+}
+.application.qt-app .qt-empty i{color:var(--qd-copper)}
+.application.qt-app :is(.qt-shell input,.qt-shell select,.qt-shell textarea),.qt-mini :is(input,select,textarea){
+  background:var(--qd-bg);color:var(--qd-text);border-color:var(--qd-line);
+}
+.application.qt-app .qt-themes button.active{
+  background:var(--qd-selected);color:var(--qd-accent);border-color:var(--qd-accent);
+}
+.application.qt-app .qt-primary{
+  background:var(--qd-selected);color:var(--qd-accent);border-color:var(--qd-accent);
+}
+.application.qt-app .qt-primary:not(:disabled):hover{
+  background:var(--qd-raised);border-color:var(--qd-accent);
+}
+.application.qt-app .qt-shell button:not(:disabled):hover,.qt-mini button:not(:disabled):hover{
+  background:var(--qd-raised);color:var(--qd-text);border-color:var(--qd-accent);
+}
+.application.quedaco-teatro :is(.qt-card,.qt-panel){
+  border-radius:var(--qd-radius);border-color:var(--qd-line);
+}
+.application.quedaco-teatro .qt-shell .qt-primary{
+  background:var(--qd-selected);color:var(--qd-accent);border-color:var(--qd-accent);
+}
+.application.quedaco-teatro .qt-top strong{color:var(--qd-copper)}
+.application:is(.qd-ui,.sy-creator,.qt-app,.qe-app,.qd-app,.quedaco-teatro,.opath-calendar,.qm-window,:has(.qnv)) .qd-brand-mark{color:var(--qd-copper);border-color:var(--qd-copper);background:var(--qd-copper-soft)}
+
+.application.qm-window :is(input,select,textarea),.application:has(.qnv) .qnv :is(input,select,textarea){background:var(--qd-panel);color:var(--qd-text);border-color:var(--qd-line);border-radius:8px}
+.application.qm-window .qm details,.application:has(.qnv) .qnv fieldset{background:var(--qd-panel);color:var(--qd-text);border-color:var(--qd-line);border-radius:12px}
